@@ -1,4 +1,4 @@
-package qc.kitk4t.testslick;
+package <package>;
 
 import java.util.Random;
 
