@@ -1,0 +1,238 @@
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.UIManager;
+
+public abstract class WindowAPI{
+
+	public static final Font DEFAULT_FONT = new Font("Open Sans SemiBold", Font.PLAIN, 16);
+	
+	/**Frame of the window.*/
+	protected JFrame frame;
+	
+	/**Show the FPS and Ticks.*/
+	protected boolean show_log = true;
+	
+	/**Program is running.*/
+	protected boolean running;
+	
+	/**Inputs are allowed*/
+	private boolean canInput = false;
+	
+	/**Update and frames per second.*/
+	protected int update_per_second = 30, frames_per_second = 60;
+
+	/**
+	 * @param title      Title of the window
+	 * @param width      Width of the window
+	 * @param height     Height of the window
+	 * @param windowFont Font of the window
+	 * @param resizable Window is resizable
+	 * @param undecorated Window is undecorated
+	 * @param showLog Show the logs of the window
+	 */
+	public WindowAPI(String title, int width, int height, Font windowFont, boolean resizable, boolean undecorated, boolean showLog) {
+		this.show_log = showLog;
+		frame = new JFrame();
+		frame.setTitle(title);// Set the title
+		frame.setDefaultCloseOperation(3);// Exit on close
+		frame.setSize(width, height); // Set the size of the window
+		frame.setLocationRelativeTo(null); // Set the window in the center of the screen
+		frame.setContentPane(new WindowPanelAPI(this));
+		frame.setLayout(null); // Clear the layout
+		setUIFont(windowFont);// Set the default font of the program
+		init();// call init method
+		frame.setResizable(resizable); // Set the window not resizable
+		frame.setUndecorated(undecorated); // Remove the border of the window
+		frame.setVisible(true);// Set the window visible
+		running = true;
+		
+		frame.addKeyListener(new KeyListener() {
+			
+			@Override
+			public void keyTyped(KeyEvent e) {
+				if(canInput)
+					inputKeys(e);
+			}
+			
+			@Override
+			public void keyReleased(KeyEvent e) {
+				if(canInput)
+					inputKeys(e);
+			}
+			
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if(canInput)
+					inputKeys(e);
+			}
+		});
+		
+		frame.addMouseListener(new MouseListener() {
+			
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				if(canInput)
+					inputMouseButtons(e);
+			}
+			
+			@Override
+			public void mousePressed(MouseEvent e) {
+				if(canInput)
+					inputMouseButtons(e);
+			}
+			
+			@Override
+			public void mouseExited(MouseEvent e) {
+				if(canInput)
+					inputMouseButtons(e);
+			}
+			
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				if(canInput)
+					inputMouseButtons(e);
+			}
+			
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if(canInput)
+					inputMouseButtons(e);
+			}
+		});
+		
+		updater();
+	}
+
+	/**
+	 * Set the font of the entire program
+	 * 
+	 * @param f Font to use
+	 */
+	protected void setUIFont(Font f) {
+		@SuppressWarnings("rawtypes")
+		java.util.Enumeration keys = UIManager.getDefaults().keys();
+		while (keys.hasMoreElements()) {
+			Object key = keys.nextElement();
+			Object value = UIManager.get(key);
+			if (value instanceof javax.swing.plaf.FontUIResource)
+				UIManager.put(key, f);
+		}
+	}
+
+	/** Updater Loop of the window */
+	protected void updater() {
+		long initialTime = System.nanoTime();
+		final double timeU = 1000000000 / update_per_second;
+		final double timeF = 1000000000 / frames_per_second;
+		double deltaU = 0, deltaF = 0;
+		int frames = 0, ticks = 0;
+		long timer = System.currentTimeMillis();
+
+		    while (running) {
+
+		        long currentTime = System.nanoTime();
+		        deltaU += (currentTime - initialTime) / timeU;
+		        deltaF += (currentTime - initialTime) / timeF;
+		        initialTime = currentTime;
+
+		        if (deltaU >= 1) {
+		        	canInput = true;
+		            update();
+		            ticks++;
+		            deltaU--;
+		            
+		        }
+
+		        if (deltaF >= 1) {
+		        	frame.getContentPane().repaint();
+		            frames++;
+		            deltaF--;
+		        }
+
+		        if (System.currentTimeMillis() - timer > 1000) {
+		            if (show_log)
+		                System.out.println(String.format("UPS: %s, FPS: %s", ticks, frames));
+		           
+		            canInput = false;
+		            frames = 0;
+		            ticks = 0;
+		            timer += 1000;
+		        }
+		    }
+		    exit();
+	}
+	
+	/** Stop the loop.*/
+	protected void stop() {
+		running = false;
+	}
+
+	/** Exit the console.*/
+	private void exit() {
+		frame.dispose();
+		System.exit(0);
+	}
+	
+	/**@return Frame of the window.*/
+	protected JFrame getFrame() {
+		return this.frame;
+	}
+	
+	/**@param value Show the logs.*/
+	protected void enableLog(boolean value) {
+		this.show_log = value;
+	}
+
+	/** This method is called after the window is created.*/
+	abstract void init();
+
+	/** This method is called every update done by the updater.*/
+	abstract void update();
+	
+	/** This method is called every update and should get the key inputs.*/
+	abstract void inputKeys(KeyEvent e);
+	
+	/** This method is called every update and should get the mouse inputs.*/
+	abstract void inputMouseButtons(MouseEvent e);
+	
+	/** This method is called every time the screen should render graphics.
+	 * @param g2d Graphics tool to work with.*/
+	abstract void render(Graphics2D g2d);
+}
+
+class WindowPanelAPI extends JPanel{
+
+	private static final long serialVersionUID = 1L;
+	
+	private WindowAPI window;
+	
+	public WindowPanelAPI(WindowAPI window) {
+		this.window = window;
+	}
+	
+	public void paint(Graphics g) {
+		/*if(g2d == null)
+			initG2D(g);*/
+		Graphics2D g2d = (Graphics2D) g;
+		g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+		g2d.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
+		g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+		g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+		g2d.setColor(Color.black);
+		g2d.fillRect(0, 0, getWidth(), getHeight());
+		g2d.setColor(Color.WHITE);
+		window.render(g2d);
+	}
+}
+
